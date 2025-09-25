@@ -1,3 +1,4 @@
+// scripts/app.js
 window.addEventListener("DOMContentLoaded", () => {
   const oreEl = document.getElementById("ore");
   const energiaEl = document.getElementById("energia");
@@ -39,31 +40,25 @@ window.addEventListener("DOMContentLoaded", () => {
   // --- Plugin: mostra il Load Factor sopra ogni barra quando P_rated è valido ---
   const lfLabelPlugin = {
     id: "lfLabelPlugin",
-    afterDatasetsDraw(chart, args, pluginOptions) {
+    afterDatasetsDraw(chart) {
       const prated = parseFloat(pratedEl?.value);
-      if (!isFinite(prated) || prated <= 0) return; // senza P_rated non mostriamo LF
+      if (!isFinite(prated) || prated <= 0) return;
       const { ctx, chartArea } = chart;
       const dataset = chart.data.datasets[0];
       const meta = chart.getDatasetMeta(0);
       ctx.save();
       ctx.textAlign = "center";
       ctx.textBaseline = "bottom";
-      ctx.font = getComputedStyle(document.body).fontSize
-        ? `600 ${getComputedStyle(document.body).fontSize} Segoe UI, system-ui, sans-serif`
-        : "600 12px Segoe UI, system-ui, sans-serif";
+      ctx.font = "600 12px Segoe UI, system-ui, sans-serif";
       ctx.fillStyle = "#333";
 
       meta.data.forEach((bar, i) => {
         const val = Number(dataset.data[i]);
         if (!isFinite(val)) return;
-        const lf = prated > 0 ? (val / prated) * 100 : NaN;
-        if (!isFinite(lf)) return;
-
+        const lf = (val / prated) * 100;
         const x = bar.x;
-        // posiziona appena sopra la barra, ma non oltre il top del chartArea
         let y = bar.y - 4;
         if (y < chartArea.top + 6) y = chartArea.top + 6;
-
         ctx.fillText(`${lf.toFixed(0)}%`, x, y);
       });
 
@@ -81,7 +76,7 @@ window.addEventListener("DOMContentLoaded", () => {
     const chart = new Chart(ctx, {
       type: "bar",
       data: {
-        labels: points.map(p => `${p.kw.toFixed(2)} kW`), // Etichetta = media kW
+        labels: points.map(p => `${p.kw.toFixed(2)} kW`),
         datasets: [
           {
             label: "Potenza media (kW)",
@@ -97,7 +92,7 @@ window.addEventListener("DOMContentLoaded", () => {
           y: {
             beginAtZero: true,
             ticks: { precision: 0 },
-            suggestedMax: undefined, // lo gestiamo noi dinamicamente
+            suggestedMax: undefined,
             max: undefined
           }
         },
@@ -122,13 +117,11 @@ window.addEventListener("DOMContentLoaded", () => {
       plugins: [lfLabelPlugin]
     });
 
-    // Imposta subito lo scale max coerente con P_rated (se presente)
     updateYAxisMax(chart);
-
     return chart;
   }
 
-  // --- Aggiorna il max dell'asse Y in base a P_rated o ai dati ---
+  // --- Aggiorna asse Y ---
   function updateYAxisMax(chart) {
     if (!chart) return;
     const prated = parseFloat(pratedEl?.value);
@@ -136,14 +129,11 @@ window.addEventListener("DOMContentLoaded", () => {
     const dataMax = data.length ? Math.max(...data) : 0;
 
     if (isFinite(prated) && prated > 0) {
-      // fissa il max alla potenza nominale (o poco sopra per margine visivo se vuoi)
       chart.options.scales.y.max = prated;
       chart.options.scales.y.suggestedMax = undefined;
     } else {
-      // automatico: 10% sopra il massimo attuale
-      const autoMax = dataMax > 0 ? dataMax * 1.1 : 10;
       chart.options.scales.y.max = undefined;
-      chart.options.scales.y.suggestedMax = autoMax;
+      chart.options.scales.y.suggestedMax = dataMax > 0 ? dataMax * 1.1 : 10;
     }
     chart.update();
   }
@@ -157,23 +147,16 @@ window.addEventListener("DOMContentLoaded", () => {
       alert("Inserisci valori validi (ore > 0, energia > 0).");
       return;
     }
-
-    // Etichetta = valore medio
     const label = `${kw.toFixed(2)} kW`;
-
-    // Aggiorna grafico
     if (chart) {
       chart.data.labels.push(label);
       chart.data.datasets[0].data.push(kw);
-      updateYAxisMax(chart); // ricalcola scala in base a P_rated o ai dati
+      updateYAxisMax(chart);
     }
-
-    // Salva solo il valore numerico (compatto; l'etichetta si rigenera)
     const curr = loadPoints();
     curr.push({ kw });
     savePoints(curr);
 
-    // Aggiorna pannello risultato
     const prated = parseFloat(pratedEl?.value);
     let msg = `Media dei kW erogati: ${kw.toFixed(2)} kW`;
     if (isFinite(prated) && prated > 0) {
@@ -228,8 +211,26 @@ window.addEventListener("DOMContentLoaded", () => {
     a.click();
   });
 
-  // --- Reagisci ai cambi della potenza nominale per aggiornare scala e LF labels ---
   pratedEl?.addEventListener("input", () => {
     updateYAxisMax(chart);
+  });
+
+  // --- Gestione installazione PWA ---
+  let deferredPrompt;
+  const installBtn = document.getElementById("installBtn");
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = "inline-block";
+  });
+
+  installBtn?.addEventListener("click", async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log("Installazione PWA:", outcome);
+    deferredPrompt = null;
+    installBtn.style.display = "none";
   });
 });

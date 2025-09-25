@@ -2,7 +2,6 @@
 <html lang="it">
   <head>
     <meta charset="utf-8" />
-    <title>Media KW | Dy DF</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#ffffff" />
     <link rel="manifest" href="manifest.webmanifest" />
@@ -61,7 +60,6 @@
                   lf < 0.3 ? " (scarico)" :
                   lf < 0.5 ? " (tendenzialmente scarico)" :
                   lf <= 0.8 ? " (buona fascia)" : " (alto carico)";
-                msg += " • Utilizzo al: " + (lf * 100).toFixed(0) + "%" + giudizio;
               }
               risultato.textContent = msg;
             }
@@ -83,6 +81,10 @@
 
       <footer class="app-footer">
         <a href="#" target="_blank">Made with ❤ by D.F.</a>
+        <!-- ✅ Pulsante per installare la PWA -->
+        <button id="installBtn" class="btn primary" style="margin-left:10px; display:none;">
+          Installa App
+        </button>
       </footer>
     </div>
 
