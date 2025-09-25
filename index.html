@@ -2,7 +2,7 @@
 <html lang="it">
   <head>
     <meta charset="utf-8" />
-    <title>Media KW</title>
+    <title>Media KW | Dy DF</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#ffffff" />
     <link rel="manifest" href="manifest.webmanifest" />
@@ -61,7 +61,7 @@
                   lf < 0.3 ? " (scarico)" :
                   lf < 0.5 ? " (tendenzialmente scarico)" :
                   lf <= 0.8 ? " (buona fascia)" : " (alto carico)";
-                msg += " • Load factor: " + (lf * 100).toFixed(0) + "%" + giudizio;
+                msg += " • Utilizzato al: " + (lf * 100).toFixed(0) + "%" + giudizio;
               }
               risultato.textContent = msg;
             }
