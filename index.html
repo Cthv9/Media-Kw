@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Media KW</title>
+<meta name="theme-color" content="#0f172a" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="icon" href="./icons/icon-192.png" />
+<link rel="stylesheet" href="./style/style.css" />
+<!-- Chart.js CDN (verrà messo in cache dal service worker) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+<script src="./scripts/app.js" defer></script>
+</head>
+<body>
+<div class="app">
+<header class="header">
+<h1>Calcolo della media kW erogati</h1>
+<p class="subtitle">Offline-ready • PWA</p>
+</header>
+
+
+<main class="content">
+<form id="calc-form" class="card" autocomplete="off">
+<div class="field">
+<label for="ore">Engine Total Run Time Loaded (ore)</label>
+<input type="number" id="ore" name="ore" inputmode="decimal" step="any" min="0" required />
+</div>
+<div class="field">
+<label for="energia">Genset Total Energy (kWh)</label>
+<input type="number" id="energia" name="energia" inputmode="decimal" step="any" min="0" required />
+</div>
+<div class="field">
+<label for="etichetta">Etichetta (opzionale)</label>
+<input type="text" id="etichetta" name="etichetta" placeholder="E.g. Settimana 38" />
+</div>
+<div class="actions">
+<button type="submit" class="btn primary">Calcola</button>
+<button type="button" id="add-to-chart" class="btn" disabled>Aggiungi al grafico</button>
+<button type="reset" class="btn ghost" id="reset-form">Reset</button>
+</div>
+<p id="risultato" class="result" aria-live="polite"></p>
+</form>
+
+
+<section class="card">
+<div class="chart-header">
+<h2>Andamento potenza media (kW)</h2>
+<div class="chart-actions">
+<button id="clear-chart" class="btn danger">Svuota grafico</button>
+</div>
+</div>
+<canvas id="kwChart" height="120"></canvas>
+</section>
+</main>
+
+
+<footer class="footer">
+<a href="#" target="_blank">Made with <span aria-label="love" title="love">❤</span> by D.F.</a>
+</footer>
+</div>
+
+
+<script>
+// Registrazione del Service Worker
+if ("serviceWorker" in navigator) {
+window.addEventListener("load", () => {
+navigator.serviceWorker.register("./service-worker.js").catch(console.error);
+});
+}
+</script>
+</body>
+</html>
