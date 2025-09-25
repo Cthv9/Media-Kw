@@ -9,82 +9,205 @@ window.addEventListener("DOMContentLoaded", () => {
   const exportPNGBtn = document.getElementById("exportPNG");
   const resultEl = document.getElementById("risultato");
 
+  const STORAGE_KEY = "mediaKW:data";
+
+  // --- Helpers Storage ---
+  function loadPoints() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      if (!Array.isArray(raw)) return [];
+      return raw
+        .map(p => (typeof p === "number" ? { kw: p } : p))
+        .filter(p => p && isFinite(Number(p.kw)))
+        .map(p => ({ kw: Number(p.kw) }));
+    } catch {
+      return [];
+    }
+  }
+  function savePoints(arr) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+  }
+
+  // --- Calcolo media kW dai campi input ---
+  function computeKW() {
+    const ore = parseFloat(oreEl?.value);
+    const energia = parseFloat(energiaEl?.value);
+    if (!isFinite(ore) || !isFinite(energia) || ore <= 0) return null;
+    return energia / ore; // kWh / h = kW
+  }
+
+  // --- Plugin: mostra il Load Factor sopra ogni barra quando P_rated è valido ---
+  const lfLabelPlugin = {
+    id: "lfLabelPlugin",
+    afterDatasetsDraw(chart, args, pluginOptions) {
+      const prated = parseFloat(pratedEl?.value);
+      if (!isFinite(prated) || prated <= 0) return; // senza P_rated non mostriamo LF
+      const { ctx, chartArea } = chart;
+      const dataset = chart.data.datasets[0];
+      const meta = chart.getDatasetMeta(0);
+      ctx.save();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      ctx.font = getComputedStyle(document.body).fontSize
+        ? `600 ${getComputedStyle(document.body).fontSize} Segoe UI, system-ui, sans-serif`
+        : "600 12px Segoe UI, system-ui, sans-serif";
+      ctx.fillStyle = "#333";
+
+      meta.data.forEach((bar, i) => {
+        const val = Number(dataset.data[i]);
+        if (!isFinite(val)) return;
+        const lf = prated > 0 ? (val / prated) * 100 : NaN;
+        if (!isFinite(lf)) return;
+
+        const x = bar.x;
+        // posiziona appena sopra la barra, ma non oltre il top del chartArea
+        let y = bar.y - 4;
+        if (y < chartArea.top + 6) y = chartArea.top + 6;
+
+        ctx.fillText(`${lf.toFixed(0)}%`, x, y);
+      });
+
+      ctx.restore();
+    }
+  };
+
+  // --- Inizializza Chart ---
   function initChart() {
     const ctx = document.getElementById("kwChart");
     if (!ctx || typeof Chart === "undefined") return null;
 
-    const saved = JSON.parse(localStorage.getItem("mediaKW:data") || "[]");
+    const points = loadPoints();
 
-    return new Chart(ctx, {
+    const chart = new Chart(ctx, {
       type: "bar",
       data: {
-        labels: saved.map(p => p.label),
-        datasets: [{
-          label: "Potenza media (kW)",
-          data: saved.map(p => p.kw),
-          borderWidth: 1,
-          backgroundColor: "#0078d4"
-        }]
+        labels: points.map(p => `${p.kw.toFixed(2)} kW`), // Etichetta = media kW
+        datasets: [
+          {
+            label: "Potenza media (kW)",
+            data: points.map(p => p.kw),
+            borderWidth: 1,
+            backgroundColor: "#0078d4"
+          }
+        ]
       },
       options: {
         responsive: true,
-        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { precision: 0 },
+            suggestedMax: undefined, // lo gestiamo noi dinamicamente
+            max: undefined
+          }
+        },
         plugins: {
           legend: { display: false },
           tooltip: {
-            callbacks: { label: c => `${c.parsed.y.toFixed(2)} kW` }
+            callbacks: {
+              label: c => {
+                const prated = parseFloat(pratedEl?.value);
+                const kw = c.parsed.y;
+                if (isFinite(prated) && prated > 0) {
+                  const lf = (kw / prated) * 100;
+                  return `${kw.toFixed(2)} kW — LF ${lf.toFixed(0)}%`;
+                }
+                return `${kw.toFixed(2)} kW`;
+              }
+            }
           }
-        }
-      }
+        },
+        animation: { duration: 200 }
+      },
+      plugins: [lfLabelPlugin]
     });
+
+    // Imposta subito lo scale max coerente con P_rated (se presente)
+    updateYAxisMax(chart);
+
+    return chart;
+  }
+
+  // --- Aggiorna il max dell'asse Y in base a P_rated o ai dati ---
+  function updateYAxisMax(chart) {
+    if (!chart) return;
+    const prated = parseFloat(pratedEl?.value);
+    const data = chart.data.datasets[0].data.map(Number).filter(isFinite);
+    const dataMax = data.length ? Math.max(...data) : 0;
+
+    if (isFinite(prated) && prated > 0) {
+      // fissa il max alla potenza nominale (o poco sopra per margine visivo se vuoi)
+      chart.options.scales.y.max = prated;
+      chart.options.scales.y.suggestedMax = undefined;
+    } else {
+      // automatico: 10% sopra il massimo attuale
+      const autoMax = dataMax > 0 ? dataMax * 1.1 : 10;
+      chart.options.scales.y.max = undefined;
+      chart.options.scales.y.suggestedMax = autoMax;
+    }
+    chart.update();
   }
 
   const chart = initChart();
 
-  function computeKW() {
-    const ore = parseFloat(oreEl.value);
-    const energia = parseFloat(energiaEl.value);
-    if (!isFinite(ore) || !isFinite(energia) || ore <= 0) return null;
-    return energia / ore;
-  }
-
-  addBtn.addEventListener("click", () => {
+  // --- UI actions ---
+  addBtn?.addEventListener("click", () => {
     const kw = computeKW();
     if (kw == null) {
       alert("Inserisci valori validi (ore > 0, energia > 0).");
       return;
     }
-    const label = new Date().toLocaleString();
 
-    chart.data.labels.push(label);
-    chart.data.datasets[0].data.push(kw);
-    chart.update();
+    // Etichetta = valore medio
+    const label = `${kw.toFixed(2)} kW`;
 
-    const curr = JSON.parse(localStorage.getItem("mediaKW:data") || "[]");
-    curr.push({ label, kw });
-    localStorage.setItem("mediaKW:data", JSON.stringify(curr));
-
-    if (!resultEl.textContent) {
-      resultEl.textContent = `Media dei kW: ${kw.toFixed(2)}`;
+    // Aggiorna grafico
+    if (chart) {
+      chart.data.labels.push(label);
+      chart.data.datasets[0].data.push(kw);
+      updateYAxisMax(chart); // ricalcola scala in base a P_rated o ai dati
     }
+
+    // Salva solo il valore numerico (compatto; l'etichetta si rigenera)
+    const curr = loadPoints();
+    curr.push({ kw });
+    savePoints(curr);
+
+    // Aggiorna pannello risultato
+    const prated = parseFloat(pratedEl?.value);
+    let msg = `Media dei kW erogati: ${kw.toFixed(2)} kW`;
+    if (isFinite(prated) && prated > 0) {
+      const lf = kw / prated;
+      const giudizio =
+        lf < 0.3 ? " (scarico)" :
+        lf < 0.5 ? " (tendenzialmente scarico)" :
+        lf <= 0.8 ? " (buona fascia)" : " (alto carico)";
+      msg += ` • Load factor: ${(lf * 100).toFixed(0)}%${giudizio}`;
+    }
+    resultEl.textContent = msg;
   });
 
-  clearBtn.addEventListener("click", () => {
+  clearBtn?.addEventListener("click", () => {
     if (!confirm("Sicuro di svuotare il grafico?")) return;
-    chart.data.labels = [];
-    chart.data.datasets[0].data = [];
-    chart.update();
-    localStorage.setItem("mediaKW:data", "[]");
+    if (chart) {
+      chart.data.labels = [];
+      chart.data.datasets[0].data = [];
+      updateYAxisMax(chart);
+    }
+    savePoints([]);
   });
 
-  resetBtn.addEventListener("click", () => {
+  resetBtn?.addEventListener("click", () => {
     resultEl.textContent = "";
   });
 
-  exportCSVBtn.addEventListener("click", () => {
-    const rows = [["Etichetta", "kW"]];
-    chart.data.labels.forEach((lbl, i) => {
-      rows.push([lbl, chart.data.datasets[0].data[i]]);
+  exportCSVBtn?.addEventListener("click", () => {
+    const data = chart?.data?.datasets?.[0]?.data || [];
+    const prated = parseFloat(pratedEl?.value);
+    const rows = [["kW", "LoadFactor(%)"]];
+    data.forEach(val => {
+      const lf = (isFinite(prated) && prated > 0) ? (val / prated) * 100 : "";
+      rows.push([val, lf === "" ? "" : lf.toFixed(0)]);
     });
     const csv = rows.map(r => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -96,11 +219,17 @@ window.addEventListener("DOMContentLoaded", () => {
     URL.revokeObjectURL(url);
   });
 
-  exportPNGBtn.addEventListener("click", () => {
+  exportPNGBtn?.addEventListener("click", () => {
+    if (!chart) return;
     const url = chart.toBase64Image("image/png", 1.0);
     const a = document.createElement("a");
     a.href = url;
     a.download = "graficoKW.png";
     a.click();
+  });
+
+  // --- Reagisci ai cambi della potenza nominale per aggiornare scala e LF labels ---
+  pratedEl?.addEventListener("input", () => {
+    updateYAxisMax(chart);
   });
 });
