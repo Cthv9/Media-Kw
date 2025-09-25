@@ -2,7 +2,7 @@
 <html lang="it">
   <head>
     <meta charset="utf-8" />
-    <title>Media KW | By DF</title>
+    <title>Media KW | Dy DF</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#ffffff" />
     <link rel="manifest" href="manifest.webmanifest" />
@@ -28,6 +28,9 @@
             <label for="energia">Genset Total Energy (kWh):</label>
             <input type="number" id="energia" name="energia" step="any" />
 
+            <label for="prated">Potenza nominale (kW, opzionale):</label>
+            <input type="number" id="prated" name="prated" step="any" />
+
             <div class="btn-row">
               <button type="button" class="btn primary" onclick="calcolaMedia()">Calcola media</button>
               <button type="reset" class="btn" id="btnReset">Reset valori</button>
@@ -37,21 +40,30 @@
             <p id="risultato" class="result"></p>
           </form>
 
-          <!-- Funzione originale conservata -->
+          <!-- Funzione di calcolo -->
           <script>
             function calcolaMedia() {
               var ore = parseFloat(document.getElementById("ore").value);
               var energia = parseFloat(document.getElementById("energia").value);
+              var prated = parseFloat(document.getElementById("prated").value);
               var risultato = document.getElementById("risultato");
-              if (isNaN(ore) || isNaN(energia)) {
-                risultato.textContent = "Inserisci valori validi per entrambe le caselle di testo.";
-              } else if (ore === 1) {
-                risultato.textContent = "Media dei KW: " + energia;
-              } else if (ore > 1) {
-                risultato.textContent = "Media dei KW erogati in ore: " + (energia / ore).toFixed(2);
-              } else {
-                risultato.textContent = "Media dei KW erogati in minuti: " + (energia / (ore * 60)).toFixed(2);
+
+              if (isNaN(ore) || isNaN(energia) || ore <= 0) {
+                risultato.textContent = "Inserisci kWh validi e ore > 0.";
+                return;
               }
+              var pavg = energia / ore;
+              var msg = "Media dei kW erogati: " + pavg.toFixed(2) + " kW";
+
+              if (isFinite(prated) && prated > 0) {
+                var lf = pavg / prated;
+                var giudizio =
+                  lf < 0.3 ? " (scarico)" :
+                  lf < 0.5 ? " (tendenzialmente scarico)" :
+                  lf <= 0.8 ? " (buona fascia)" : " (alto carico)";
+                msg += " • Load factor: " + (lf * 100).toFixed(0) + "%" + giudizio;
+              }
+              risultato.textContent = msg;
             }
           </script>
         </section>
@@ -74,6 +86,7 @@
       </footer>
     </div>
 
+    <!-- Registrazione Service Worker -->
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {

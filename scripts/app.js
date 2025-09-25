@@ -1,6 +1,7 @@
 window.addEventListener("DOMContentLoaded", () => {
   const oreEl = document.getElementById("ore");
   const energiaEl = document.getElementById("energia");
+  const pratedEl = document.getElementById("prated");
   const addBtn = document.getElementById("addToChart");
   const clearBtn = document.getElementById("clearChart");
   const resetBtn = document.getElementById("btnReset");
@@ -43,16 +44,14 @@ window.addEventListener("DOMContentLoaded", () => {
   function computeKW() {
     const ore = parseFloat(oreEl.value);
     const energia = parseFloat(energiaEl.value);
-    if (!isFinite(ore) || !isFinite(energia) || ore === 0) return null;
-    if (ore === 1) return energia;
-    if (ore > 1) return energia / ore;
-    return energia / (ore * 60);
+    if (!isFinite(ore) || !isFinite(energia) || ore <= 0) return null;
+    return energia / ore;
   }
 
   addBtn.addEventListener("click", () => {
     const kw = computeKW();
     if (kw == null) {
-      alert("Inserisci valori validi.");
+      alert("Inserisci valori validi (ore > 0, energia > 0).");
       return;
     }
     const label = new Date().toLocaleString();
@@ -66,7 +65,7 @@ window.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("mediaKW:data", JSON.stringify(curr));
 
     if (!resultEl.textContent) {
-      resultEl.textContent = `Media dei KW: ${kw.toFixed(2)}`;
+      resultEl.textContent = `Media dei kW: ${kw.toFixed(2)}`;
     }
   });
 
@@ -87,7 +86,7 @@ window.addEventListener("DOMContentLoaded", () => {
     chart.data.labels.forEach((lbl, i) => {
       rows.push([lbl, chart.data.datasets[0].data[i]]);
     });
-    const csv = rows.map(r => r.join(",")).join("\\n");
+    const csv = rows.map(r => r.join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
