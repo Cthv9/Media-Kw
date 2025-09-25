@@ -1,4 +1,4 @@
-const CACHE_NAME = "media-kw-v2";
+const CACHE_NAME = "media-kw-v3";
 const ASSETS = [
   "./",
   "./index.html",
@@ -23,13 +23,9 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const req = event.request;
-
-  // Navigazione: offline fallback
   if (req.mode === "navigate") {
     event.respondWith(fetch(req).catch(() => caches.match("./index.html")));
     return;
   }
-
-  // Cache-first per asset
   event.respondWith(caches.match(req).then((c) => c || fetch(req)));
 });

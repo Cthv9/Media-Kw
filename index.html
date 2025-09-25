@@ -2,14 +2,14 @@
 <html lang="it">
   <head>
     <meta charset="utf-8" />
-    <title>Media KW</title>
+    <title>Media KW | By DF</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#ffffff" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="style/home.png" />
     <link rel="stylesheet" href="style/style.css" />
 
-    <!-- Chart.js: caricato PRIMA di app.js, entrambi con defer per mantenere l’ordine -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
     <script src="scripts/app.js" defer></script>
   </head>
@@ -17,16 +17,15 @@
     <div class="container">
       <header class="app-header">
         <h1>Calcolo della media KW erogati</h1>
-        <p class="subtitle">PWA • offline-ready</p>
       </header>
 
       <main class="grid">
         <section class="card">
           <form id="formMedia" onsubmit="return false;">
-            <label for="ore">Inserisci "Engine Total Run Time Loaded" (ore):</label>
+            <label for="ore">Engine Total Run Time (ore):</label>
             <input type="number" id="ore" name="ore" step="any" />
 
-            <label for="energia">Inserisci "Genset Total Energy" (kWh):</label>
+            <label for="energia">Genset Total Energy (kWh):</label>
             <input type="number" id="energia" name="energia" step="any" />
 
             <div class="btn-row">
@@ -38,7 +37,7 @@
             <p id="risultato" class="result"></p>
           </form>
 
-          <!-- La tua funzione resta IDENTICA -->
+          <!-- Funzione originale conservata -->
           <script>
             function calcolaMedia() {
               var ore = parseFloat(document.getElementById("ore").value);
@@ -49,9 +48,9 @@
               } else if (ore === 1) {
                 risultato.textContent = "Media dei KW: " + energia;
               } else if (ore > 1) {
-                risultato.textContent = "Media dei KW erogati in ore: " + energia / ore;
+                risultato.textContent = "Media dei KW erogati in ore: " + (energia / ore).toFixed(2);
               } else {
-                risultato.textContent = "Media dei KW erogati in minuti: " + energia / (ore * 60);
+                risultato.textContent = "Media dei KW erogati in minuti: " + (energia / (ore * 60)).toFixed(2);
               }
             }
           </script>
@@ -60,7 +59,11 @@
         <section class="card">
           <div class="chart-head">
             <h2>Andamento potenza media (kW)</h2>
-            <button type="button" class="btn danger" id="clearChart">Svuota grafico</button>
+            <div class="btn-row">
+              <button type="button" class="btn ghost" id="exportCSV">Esporta CSV</button>
+              <button type="button" class="btn ghost" id="exportPNG">Esporta PNG</button>
+              <button type="button" class="btn danger" id="clearChart">Svuota grafico</button>
+            </div>
           </div>
           <canvas id="kwChart" height="140"></canvas>
         </section>
@@ -71,7 +74,6 @@
       </footer>
     </div>
 
-    <!-- Registrazione Service Worker -->
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
