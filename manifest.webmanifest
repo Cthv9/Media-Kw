@@ -1,11 +1,19 @@
 {
-  "name": "Media KW",
-  "short_name": "Media KW",
-  "start_url": "index.html",
+  "name": "Media KW | Dy DF",
+  "short_name": "MediaKW",
+  "description": "Calcolo della media kW erogati e Load Factor di un generatore",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "icons": [
-    { "src": "style/home.png", "sizes": "192x192", "type": "image/png" }
+    {
+      "src": "style/home.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
   ]
 }
