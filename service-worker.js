@@ -1,4 +1,4 @@
-const CACHE_NAME = "media-kw-v1";
+const CACHE_NAME = "media-kw-v2";
 const ASSETS = [
   "./",
   "./index.html",
