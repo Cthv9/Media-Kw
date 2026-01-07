@@ -286,14 +286,33 @@ window.addEventListener("DOMContentLoaded", () => {
     URL.revokeObjectURL(url);
   });
 
-  exportPNGBtn?.addEventListener("click", () => {
+    exportPNGBtn?.addEventListener("click", () => {
     if (!chart) return;
-    const url = chart.toBase64Image("image/png", 1.0);
+
+    const canvas = chart.canvas;
+    const ctx = canvas.getContext("2d");
+
+    // Salva stato originale
+    ctx.save();
+
+    // Disegna background bianco
+    ctx.globalCompositeOperation = "destination-over";
+    ctx.fillStyle = "#ffffff"; // puoi cambiare colore se vuoi
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Esporta immagine
+    const url = canvas.toDataURL("image/png", 1.0);
+
+    // Ripristina stato originale
+    ctx.restore();
+
+    // Download
     const a = document.createElement("a");
     a.href = url;
     a.download = "graficoKW.png";
     a.click();
   });
+
 
   pratedEl?.addEventListener("input", () => {
     const points = loadPoints();
