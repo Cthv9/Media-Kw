@@ -2,62 +2,68 @@
 <html lang="it">
   <head>
     <meta charset="utf-8" />
-    <title>Media KW | By DF</title>
+    <title>Media kW | By DF</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#ffffff" />
+
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="icon" href="style/home.png" />
+    <link rel="icon" type="image/png" href="style/home.png" />
     <link rel="stylesheet" href="style/style.css" />
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
     <script src="scripts/app.js" defer></script>
   </head>
+
   <body>
     <div class="container">
       <header class="app-header">
-        <h1>Calcolo della media KW erogati</h1>
+        <h1>Calcolo della media kW erogati</h1>
       </header>
 
       <main class="grid">
+        <!-- FORM -->
         <section class="card">
           <form id="formMedia" onsubmit="return false;">
             <label for="ore">Engine Total Run Time (ore):</label>
-            <input type="number" id="ore" name="ore" step="any" />
+            <input type="number" id="ore" name="ore" step="any" inputmode="decimal" />
 
             <label for="energia">Genset Total Energy (kWh):</label>
-            <input type="number" id="energia" name="energia" step="any" />
+            <input type="number" id="energia" name="energia" step="any" inputmode="decimal" />
 
             <label for="prated">Potenza nominale (kW, opzionale):</label>
-            <input type="number" id="prated" name="prated" step="any" />
-			
-			<label for="seriale">Seriale (opzionale):</label>
-			<input type="text" id="seriale" name="seriale" placeholder="Es. SN123456" />
+            <input type="number" id="prated" name="prated" step="any" inputmode="decimal" />
 
+            <label for="seriale">Seriale (opzionale):</label>
+            <input type="text" id="seriale" name="seriale" placeholder="Es. SN123456" />
 
             <div class="btn-row">
-              <button type="button" class="btn primary" onclick="calcolaMedia()">Calcola media</button>
-              <button type="reset" class="btn" id="btnReset">Reset valori</button>
+              <button type="button" class="btn primary" onclick="calcolaMedia()">Calcola</button>
+              <button type="reset" class="btn" id="btnReset">Reset</button>
               <button type="button" class="btn ghost" id="addToChart">Aggiungi al grafico</button>
             </div>
 
             <p id="risultato" class="result"></p>
           </form>
 
-          <!-- Funzione di calcolo -->
+          <!-- Calcolo “a schermo” (coerente: kW = kWh / h) -->
           <script>
             function calcolaMedia() {
               var ore = parseFloat(document.getElementById("ore").value);
               var energia = parseFloat(document.getElementById("energia").value);
               var prated = parseFloat(document.getElementById("prated").value);
+              var seriale = (document.getElementById("seriale").value || "").trim();
               var risultato = document.getElementById("risultato");
 
               if (isNaN(ore) || isNaN(energia) || ore <= 0) {
                 risultato.textContent = "Inserisci kWh validi e ore > 0.";
                 return;
               }
+
               var pavg = energia / ore;
               var msg = "Media dei kW erogati: " + pavg.toFixed(2) + " kW";
+
+              if (seriale) msg += " • Seriale: " + seriale;
 
               if (isFinite(prated) && prated > 0) {
                 var lf = pavg / prated;
@@ -65,36 +71,52 @@
                   lf < 0.3 ? " (scarico)" :
                   lf < 0.5 ? " (tendenzialmente scarico)" :
                   lf <= 0.8 ? " (buona fascia)" : " (alto carico)";
-                msg += " • Utilizzato al: " + (lf * 100).toFixed(0) + "%" + giudizio;
+                msg += " • Load factor: " + (lf * 100).toFixed(0) + "%" + giudizio;
               }
+
               risultato.textContent = msg;
             }
           </script>
         </section>
 
+        <!-- GRAFICO + TABELLA -->
         <section class="card">
           <div class="chart-head">
             <h2>Andamento potenza media (kW)</h2>
             <div class="btn-row">
               <button type="button" class="btn ghost" id="exportCSV">Esporta CSV</button>
               <button type="button" class="btn ghost" id="exportPNG">Esporta PNG</button>
-              <button type="button" class="btn danger" id="clearChart">Svuota grafico</button>
+              <button type="button" class="btn danger" id="clearChart">Svuota</button>
             </div>
           </div>
+
           <canvas id="kwChart" height="140"></canvas>
+
+          <div class="table-wrap">
+            <table class="data-table" id="dataTable" aria-label="Storico valori">
+              <thead>
+                <tr>
+                  <th>Seriale</th>
+                  <th>kW</th>
+                  <th>LF%</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="dataTableBody"></tbody>
+            </table>
+          </div>
         </section>
       </main>
 
       <footer class="app-footer">
         <a href="#" target="_blank">Made with ❤ by D.F.</a>
-        <!-- ✅ Pulsante per installare la PWA -->
         <button id="installBtn" class="btn primary" style="margin-left:10px; display:none;">
           Installa App
         </button>
       </footer>
     </div>
 
-    <!-- Registrazione Service Worker -->
+    <!-- Service Worker -->
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {

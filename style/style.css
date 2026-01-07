@@ -10,6 +10,7 @@
 
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
+
 body {
   font-family: "Segoe UI", system-ui, sans-serif;
   background: var(--bg);
@@ -17,6 +18,7 @@ body {
 }
 
 .container { max-width: 980px; margin: 0 auto; padding: 20px; }
+
 .app-header { margin-bottom: 16px; }
 .app-header h1 { margin: 0; font-size: 1.8rem; }
 
@@ -38,7 +40,9 @@ body {
 }
 
 label { display: block; margin: 12px 0 6px; font-weight: 500; }
-input[type=number] {
+
+input[type=number],
+input[type=text] {
   width: 100%;
   padding: 10px;
   border-radius: 8px;
@@ -46,13 +50,16 @@ input[type=number] {
   background: #fff;
   color: var(--text);
 }
-input[type=number]:focus {
+
+input[type=number]:focus,
+input[type=text]:focus {
   border-color: var(--primary);
   outline: none;
   box-shadow: 0 0 0 2px rgba(0,120,212,.3);
 }
 
 .btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
 .btn {
   border: 1px solid var(--ring);
   background: #f9f9f9;
@@ -62,20 +69,22 @@ input[type=number]:focus {
   cursor: pointer;
   transition: background 0.2s;
 }
+
 .btn:hover { background: #e6e6e6; }
+
 .btn.primary {
   background: var(--primary);
   border-color: transparent;
   color: #fff;
 }
+
 .btn.danger {
   background: var(--danger);
   border-color: transparent;
   color: #fff;
 }
-.btn.ghost {
-  background: transparent;
-}
+
+.btn.ghost { background: transparent; }
 
 .result { min-height: 1.6em; margin-top: 8px; font-weight: 600; }
 
@@ -86,6 +95,33 @@ input[type=number]:focus {
   gap: 8px;
   margin-bottom: 10px;
 }
+
+.table-wrap { margin-top: 12px; overflow-x: auto; }
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--ring);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.data-table th,
+.data-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--ring);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.data-table thead th {
+  background: #f7f7f7;
+  font-weight: 600;
+}
+
+.data-table tbody tr:hover { background: #fafafa; }
+.data-table td:last-child { text-align: right; }
 
 .app-footer {
   text-align: center;

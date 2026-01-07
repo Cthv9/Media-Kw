@@ -1,16 +1,17 @@
-const CACHE_NAME = "media-kw-v6";
+const CACHE_NAME = "media-kw-v1";
 const ASSETS = [
   "./",
   "./index.html",
-  "./style/style.css",
-  "./scripts/app.js",
   "./manifest.webmanifest",
+  "./service-worker.js",
+  "./style/style.css",
   "./style/home.png",
+  "./scripts/app.js",
   "https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(ASSETS)));
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
 });
 
 self.addEventListener("activate", (event) => {
@@ -23,9 +24,11 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const req = event.request;
+
   if (req.mode === "navigate") {
     event.respondWith(fetch(req).catch(() => caches.match("./index.html")));
     return;
   }
-  event.respondWith(caches.match(req).then((c) => c || fetch(req)));
+
+  event.respondWith(caches.match(req).then((cached) => cached || fetch(req)));
 });

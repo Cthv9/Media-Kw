@@ -12,9 +12,11 @@ window.addEventListener("DOMContentLoaded", () => {
   const exportPNGBtn = document.getElementById("exportPNG");
   const resultEl = document.getElementById("risultato");
 
+  const tbody = document.getElementById("dataTableBody");
+
   const STORAGE_KEY = "mediaKW:data";
 
-  // --- Storage ---
+  // -------- Storage --------
   function loadPoints() {
     try {
       const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
@@ -30,16 +32,22 @@ window.addEventListener("DOMContentLoaded", () => {
       return [];
     }
   }
+
   function savePoints(arr) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
   }
 
-  // --- Calcolo media ---
+  // -------- Helpers --------
   function computeKW() {
     const ore = parseFloat(oreEl?.value);
     const energia = parseFloat(energiaEl?.value);
     if (!isFinite(ore) || !isFinite(energia) || ore <= 0) return null;
     return energia / ore;
+  }
+
+  function getPRated() {
+    const v = parseFloat(pratedEl?.value);
+    return isFinite(v) && v > 0 ? v : null;
   }
 
   function makeLabel(kw, seriale) {
@@ -48,12 +56,12 @@ window.addEventListener("DOMContentLoaded", () => {
     return s ? `${s} – ${k}` : k;
   }
 
-  // --- Plugin Load Factor sopra barra ---
+  // -------- Plugin LF% sopra barra --------
   const lfLabelPlugin = {
     id: "lfLabelPlugin",
     afterDatasetsDraw(chart) {
-      const prated = parseFloat(pratedEl?.value);
-      if (!isFinite(prated) || prated <= 0) return;
+      const prated = getPRated();
+      if (!prated) return;
 
       const { ctx, chartArea } = chart;
       const dataset = chart.data.datasets[0];
@@ -68,6 +76,7 @@ window.addEventListener("DOMContentLoaded", () => {
       meta.data.forEach((bar, i) => {
         const val = Number(dataset.data[i]);
         if (!isFinite(val)) return;
+
         const lf = (val / prated) * 100;
 
         const x = bar.x;
@@ -81,7 +90,7 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  // --- Chart ---
+  // -------- Chart init --------
   function initChart() {
     const ctx = document.getElementById("kwChart");
     if (!ctx || typeof Chart === "undefined") return null;
@@ -92,12 +101,14 @@ window.addEventListener("DOMContentLoaded", () => {
       type: "bar",
       data: {
         labels: points.map(p => makeLabel(p.kw, p.seriale)),
-        datasets: [{
-          label: "Potenza media (kW)",
-          data: points.map(p => p.kw),
-          borderWidth: 1,
-          backgroundColor: "#0078d4"
-        }]
+        datasets: [
+          {
+            label: "Potenza media (kW)",
+            data: points.map(p => p.kw),
+            borderWidth: 1,
+            backgroundColor: "#0078d4"
+          }
+        ]
       },
       options: {
         responsive: true,
@@ -114,9 +125,9 @@ window.addEventListener("DOMContentLoaded", () => {
           tooltip: {
             callbacks: {
               label: c => {
-                const prated = parseFloat(pratedEl?.value);
+                const prated = getPRated();
                 const kw = c.parsed.y;
-                if (isFinite(prated) && prated > 0) {
+                if (prated) {
                   const lf = (kw / prated) * 100;
                   return `${kw.toFixed(2)} kW — LF ${lf.toFixed(0)}%`;
                 }
@@ -136,11 +147,12 @@ window.addEventListener("DOMContentLoaded", () => {
 
   function updateYAxisMax(chart) {
     if (!chart) return;
-    const prated = parseFloat(pratedEl?.value);
+
+    const prated = getPRated();
     const data = chart.data.datasets[0].data.map(Number).filter(isFinite);
     const dataMax = data.length ? Math.max(...data) : 0;
 
-    if (isFinite(prated) && prated > 0) {
+    if (prated) {
       chart.options.scales.y.max = prated;
       chart.options.scales.y.suggestedMax = undefined;
     } else {
@@ -152,7 +164,67 @@ window.addEventListener("DOMContentLoaded", () => {
 
   const chart = initChart();
 
-  // --- Actions ---
+  // -------- Table render --------
+  function renderTable(points) {
+    if (!tbody) return;
+    const prated = getPRated();
+
+    tbody.innerHTML = "";
+    points.forEach((p, idx) => {
+      const tr = document.createElement("tr");
+
+      const tdS = document.createElement("td");
+      tdS.textContent = p.seriale || "—";
+
+      const tdKW = document.createElement("td");
+      tdKW.textContent = p.kw.toFixed(2);
+
+      const tdLF = document.createElement("td");
+      if (prated) {
+        const lf = (p.kw / prated) * 100;
+        tdLF.textContent = lf.toFixed(0);
+      } else {
+        tdLF.textContent = "—";
+      }
+
+      const tdA = document.createElement("td");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "btn danger";
+      btn.textContent = "Elimina";
+      btn.style.padding = "6px 10px";
+      btn.addEventListener("click", () => deleteRow(idx));
+      tdA.appendChild(btn);
+
+      tr.appendChild(tdS);
+      tr.appendChild(tdKW);
+      tr.appendChild(tdLF);
+      tr.appendChild(tdA);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function syncChartFromPoints(points) {
+    if (!chart) return;
+    chart.data.labels = points.map(p => makeLabel(p.kw, p.seriale));
+    chart.data.datasets[0].data = points.map(p => p.kw);
+    updateYAxisMax(chart);
+  }
+
+  function deleteRow(index) {
+    const points = loadPoints();
+    if (index < 0 || index >= points.length) return;
+    points.splice(index, 1);
+    savePoints(points);
+    syncChartFromPoints(points);
+    renderTable(points);
+  }
+
+  // Render iniziale
+  renderTable(loadPoints());
+
+  // -------- Actions --------
   addBtn?.addEventListener("click", () => {
     const kw = computeKW();
     if (kw == null) {
@@ -161,44 +233,33 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     const seriale = (serialeEl?.value || "").trim();
-    const label = makeLabel(kw, seriale);
+    const points = loadPoints();
+    points.push({ kw, seriale });
+    savePoints(points);
 
-    if (chart) {
-      chart.data.labels.push(label);
-      chart.data.datasets[0].data.push(kw);
-      updateYAxisMax(chart);
-    }
+    syncChartFromPoints(points);
+    renderTable(points);
 
-    const curr = loadPoints();
-    curr.push({ kw, seriale });
-    savePoints(curr);
-
-    // Messaggio risultato
-    const prated = parseFloat(pratedEl?.value);
+    const prated = getPRated();
     let msg = `Media dei kW erogati: ${kw.toFixed(2)} kW`;
     if (seriale) msg += ` • Seriale: ${seriale}`;
-    if (isFinite(prated) && prated > 0) {
-      const lf = kw / prated;
+    if (prated) {
+      const lfRatio = kw / prated;
+      const lfPct = lfRatio * 100;
       const giudizio =
-        lf < 0.3 ? " (scarico)" :
-        lf < 0.5 ? " (tendenzialmente scarico)" :
-        lf <= 0.8 ? " (buona fascia)" : " (alto carico)";
-      msg += ` • Load factor: ${(lf * 100).toFixed(0)}%${giudizio}`;
+        lfRatio < 0.3 ? " (scarico)" :
+        lfRatio < 0.5 ? " (tendenzialmente scarico)" :
+        lfRatio <= 0.8 ? " (buona fascia)" : " (alto carico)";
+      msg += ` • Load factor: ${lfPct.toFixed(0)}%${giudizio}`;
     }
     resultEl.textContent = msg;
-
-    // opzionale: svuota seriale dopo inserimento
-    // if (serialeEl) serialeEl.value = "";
   });
 
   clearBtn?.addEventListener("click", () => {
-    if (!confirm("Sicuro di svuotare il grafico?")) return;
-    if (chart) {
-      chart.data.labels = [];
-      chart.data.datasets[0].data = [];
-      updateYAxisMax(chart);
-    }
+    if (!confirm("Sicuro di svuotare grafico e tabella?")) return;
     savePoints([]);
+    syncChartFromPoints([]);
+    renderTable([]);
   });
 
   resetBtn?.addEventListener("click", () => {
@@ -206,13 +267,13 @@ window.addEventListener("DOMContentLoaded", () => {
   });
 
   exportCSVBtn?.addEventListener("click", () => {
-    const prated = parseFloat(pratedEl?.value);
+    const prated = getPRated();
     const points = loadPoints();
 
     const rows = [["Seriale", "kW", "LoadFactor(%)"]];
     points.forEach(p => {
-      const lf = (isFinite(prated) && prated > 0) ? (p.kw / prated) * 100 : "";
-      rows.push([p.seriale || "", p.kw, lf === "" ? "" : lf.toFixed(0)]);
+      const lf = prated ? (p.kw / prated) * 100 : "";
+      rows.push([p.seriale || "", p.kw.toFixed(2), lf === "" ? "" : lf.toFixed(0)]);
     });
 
     const csv = rows.map(r => r.join(",")).join("\n");
@@ -234,9 +295,13 @@ window.addEventListener("DOMContentLoaded", () => {
     a.click();
   });
 
-  pratedEl?.addEventListener("input", () => updateYAxisMax(chart));
+  pratedEl?.addEventListener("input", () => {
+    const points = loadPoints();
+    updateYAxisMax(chart);
+    renderTable(points);
+  });
 
-  // --- Installazione PWA ---
+  // -------- Installazione PWA --------
   let deferredPrompt;
   const installBtn = document.getElementById("installBtn");
 
