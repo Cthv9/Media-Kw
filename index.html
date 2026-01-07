@@ -12,6 +12,7 @@
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
     <script src="scripts/app.js" defer></script>
   </head>
 
@@ -20,6 +21,58 @@
       <header class="app-header">
         <h1>Calcolo della media kW erogati</h1>
       </header>
+
+      <!-- INFO (espandibile) -->
+      <section class="card info-card">
+        <details>
+          <summary>
+            <strong>Scopo dell’app</strong>
+            <span class="hint">– clicca per leggere</span>
+          </summary>
+
+          <div class="info-content">
+            <p>
+              Questa applicazione permette di calcolare la potenza media oraria effettivamente erogata,
+              basandosi sui dati reali registrati dai contatori di diagnostica.
+            </p>
+
+            <p>
+              Inserendo il tempo totale di funzionamento e l’energia complessiva prodotta, viene calcolata
+              la potenza media in kW. Se si specifica anche la potenza nominale, l’app calcola il Load Factor (%),
+              utile per capire se il generatore lavora a basso carico, in condizioni ottimali o ad alto carico.
+            </p>
+
+            <p>
+              Il calcolo utilizza il <em>Total Run Time</em> per includere anche eventuali periodi a vuoto
+              e fornire una valutazione realistica delle condizioni di esercizio.
+            </p>
+
+            <h4>In parole semplici</h4>
+
+            <p>Tu inserisci:</p>
+            <ul>
+              <li>Engine Total Run Time → ore totali di funzionamento</li>
+              <li>Genset Total Energy → energia totale prodotta (kWh)</li>
+              <li><em>(opzionale)</em> Potenza nominale (kW)</li>
+              <li><em>(opzionale)</em> Numero seriale</li>
+            </ul>
+
+            <p>L’app calcola:</p>
+            <ul>
+              <li>la potenza media reale (<em>kW medi = kWh / ore</em>)</li>
+              <li>il Load Factor (%)</li>
+            </ul>
+
+            <h4>Perché è utile</h4>
+            <ul>
+              <li>🔍 individuare generatori che lavorano scarichi</li>
+              <li>⚠️ riconoscere sottocarichi cronici</li>
+              <li>📊 confrontare più generatori</li>
+              <li>🧾 esportare report tecnici (PNG / CSV)</li>
+            </ul>
+          </div>
+        </details>
+      </section>
 
       <main class="grid">
         <!-- FORM -->
@@ -80,32 +133,39 @@
         </section>
 
         <!-- GRAFICO + TABELLA -->
+        
         <section class="card">
-          <div class="chart-head">
-            <h2>Andamento potenza media (kW)</h2>
+          <div class="chart-head no-export">
+            
             <div class="btn-row">
-              <button type="button" class="btn ghost" id="exportCSV">Esporta CSV</button>
-              <button type="button" class="btn ghost" id="exportPNG">Esporta PNG</button>
-              <button type="button" class="btn danger" id="clearChart">Svuota</button>
+			  <h2>Grafico</h2>
+              <button type="button" class="btn ghost no-export" id="exportCSV">Esporta CSV</button>
+              <button type="button" class="btn ghost no-export" id="exportPNG">Esporta PNG</button>
+              <button type="button" class="btn danger no-export" id="clearChart">Svuota</button>			  
+						  
             </div>
           </div>
 
-          <canvas id="kwChart" height="140"></canvas>
+          <div id="exportArea">
+            
+            <canvas id="kwChart" height="140"></canvas>
 
-          <div class="table-wrap">
-            <table class="data-table" id="dataTable" aria-label="Storico valori">
-              <thead>
-                <tr>
-                  <th>Seriale</th>
-                  <th>kW</th>
-                  <th>LF%</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="dataTableBody"></tbody>
-            </table>
+            <div class="table-wrap">
+              <table class="data-table" id="dataTable" aria-label="Storico valori">
+                <thead>
+                  <tr>
+                    <th>Seriale</th>
+                    <th>kW</th>
+                    <th>LF%</th>
+                    <th class="no-export"></th>
+                  </tr>
+                </thead>
+                <tbody id="dataTableBody"></tbody>
+              </table>
+            </div>
           </div>
         </section>
+
       </main>
 
       <footer class="app-footer">

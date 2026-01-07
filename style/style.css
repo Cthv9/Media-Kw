@@ -128,3 +128,52 @@ input[type=text]:focus {
   color: var(--muted);
   margin-top: 18px;
 }
+
+
+/* --- Info box (espandibile) --- */
+.info-card { margin-bottom: 20px; }
+
+.info-card details summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.info-card details summary::-webkit-details-marker { display: none; }
+
+.info-card details summary::after {
+  content: "▸";
+  transition: transform 0.2s ease;
+  font-size: 1.1rem;
+  flex: 0 0 auto;
+}
+
+.info-card details[open] summary::after { transform: rotate(90deg); }
+
+.info-card .hint {
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.info-card .info-content {
+  margin-top: 10px;
+  font-size: 0.92rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.info-card .info-content h4 {
+  margin: 12px 0 6px 0;
+  color: var(--text);
+}
+
+/* --- Spaziature titolo chart (pagina) --- */
+.chart-head h2 { margin: 0; }
+.export-title { margin: 0 0 8px 0; font-size: 1.1rem; }
+
+/* --- Export report: nascondi elementi inutili --- */
+.is-exporting .no-export { display: none !important; }
+

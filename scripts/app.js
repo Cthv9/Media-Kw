@@ -190,7 +190,7 @@ window.addEventListener("DOMContentLoaded", () => {
       const tdA = document.createElement("td");
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "btn danger";
+      btn.className = "btn danger no-export";
       btn.textContent = "Elimina";
       btn.style.padding = "6px 10px";
       btn.addEventListener("click", () => deleteRow(idx));
@@ -286,30 +286,31 @@ window.addEventListener("DOMContentLoaded", () => {
     URL.revokeObjectURL(url);
   });
 
-    exportPNGBtn?.addEventListener("click", () => {
-    if (!chart) return;
+    exportPNGBtn?.addEventListener("click", async () => {
+    const exportArea = document.getElementById("exportArea");
+    if (!exportArea) return;
 
-    const canvas = chart.canvas;
-    const ctx = canvas.getContext("2d");
+    if (typeof html2canvas === "undefined") {
+      alert("html2canvas non è caricato. Controlla lo script CDN.");
+      return;
+    }
 
-    // Salva stato originale
-    ctx.save();
+    // Nasconde elementi marcati .no-export (pulsanti + colonna azioni)
+    document.body.classList.add("is-exporting");
+    await new Promise((r) => setTimeout(r, 50));
 
-    // Disegna background bianco
-    ctx.globalCompositeOperation = "destination-over";
-    ctx.fillStyle = "#ffffff"; // puoi cambiare colore se vuoi
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const canvas = await html2canvas(exportArea, {
+      backgroundColor: "#ffffff",
+      scale: 2,
+      useCORS: true
+    });
 
-    // Esporta immagine
+    document.body.classList.remove("is-exporting");
+
     const url = canvas.toDataURL("image/png", 1.0);
-
-    // Ripristina stato originale
-    ctx.restore();
-
-    // Download
     const a = document.createElement("a");
     a.href = url;
-    a.download = "graficoKW.png";
+    a.download = "report_mediaKW.png";
     a.click();
   });
 

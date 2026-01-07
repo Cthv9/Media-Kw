@@ -7,7 +7,8 @@ const ASSETS = [
   "./style/style.css",
   "./style/home.png",
   "./scripts/app.js",
-  "https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"
+  "https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js",
+  "https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
 ];
 
 self.addEventListener("install", (event) => {
